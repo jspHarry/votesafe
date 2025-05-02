@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contract Test</title>
+  <script src="https://cdn.ethers.io/lib/ethers-5.4.umd.min.js" type="application/javascript"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    button {
+      padding: 10px 15px;
+      margin: 5px;
+      cursor: pointer;
+    }
+    #results {
+      margin-top: 20px;
+      padding: 10px;
+      border: 1px solid #ccc;
+      background-color: #f5f5f5;
+      white-space: pre-wrap;
+      min-height: 200px;
+    }
+    .section {
+      margin-bottom: 20px;
+      padding: 15px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Ethereum Contract Test</h1>
+  
+  <div class="section">
+    <h2>Connection Info</h2>
+    <div id="connectionInfo">Not connected</div>
+  </div>
+  
+  <div class="section">
+    <h2>Actions</h2>
+    <button id="connectBtn">Connect MetaMask</button>
+    <button id="checkNetworkBtn">Check Network</button>
+    <button id="callContractBtn">Call getAllPolls()</button>
+  </div>
+  
+  <div class="section">
+    <h2>Results</h2>
+    <div id="results">Results will appear here...</div>
+  </div>
+  
+  <script>
+    // Contract configuration
+    const CONTRACT_ADDRESS = "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9";
+    const ABI = [
+      {
+        "inputs": [],
+        "name": "getAllPolls",
+        "outputs": [{"internalType": "address[]", "name": "", "type": "address[]"}],
+        "stateMutability": "view",
+        "type": "function"
+      }
+    ];
+    
+    let provider;
+    let signer;
+    let contract;
+    const resultsDiv = document.getElementById('results');
+    const connectionInfoDiv = document.getElementById('connectionInfo');
+    
+    function log(message) {
+      console.log(message);
+      resultsDiv.textContent += message + '\n';
+    }
+    
+    function clearLog() {
+      resultsDiv.textContent = '';
+    }
+    
+    async function updateConnectionInfo() {
+      if (!window.ethereum) {
+        connectionInfoDiv.innerHTML = '<p style="color:red">MetaMask not detected</p>';
+        return;
+      }
+      
+      try {
+        const accounts = await ethereum.request({ method: 'eth_accounts' });
+        const chainId = await ethereum.request({ method: 'eth_chainId' });
+        
+        let connectionHtml = `
+          <p><strong>Chain ID:</strong> ${parseInt(chainId, 16)}</p>
+          <p><strong>Connected:</strong> ${ethereum.isConnected() ? 'Yes' : 'No'}</p>
+        `;
+        
+        if (accounts && accounts.length > 0) {
+          connectionHtml += `<p><strong>Account:</strong> ${accounts[0]}</p>`;
+        } else {
+          connectionHtml += `<p><strong>Account:</strong> Not connected</p>`;
+        }
+        
+        connectionInfoDiv.innerHTML = connectionHtml;
+      } catch (error) {
+        connectionInfoDiv.innerHTML = `<p style="color:red">Error: ${error.message}</p>`;
+      }
+    }
+    
+    // Connect to wallet
+    document.getElementById('connectBtn').addEventListener('click', async () => {
+      clearLog();
+      try {
+        if (!window.ethereum) {
+          throw new Error('No Ethereum provider found. Please install MetaMask!');
+        }
+        
+        log('Connecting to MetaMask...');
+        const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
+        log(`Connected to account: ${accounts[0]}`);
+        
+        // Initialize ethers
+        provider = new ethers.providers.Web3Provider(window.ethereum);
+        signer = provider.getSigner();
+        contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
+        
+        log('Ethers.js initialized successfully');
+        updateConnectionInfo();
+      } catch (error) {
+        log(`Error connecting: ${error.message}`);
+      }
+    });
+    
+    // Check network
+    document.getElementById('checkNetworkBtn').addEventListener('click', async () => {
+      clearLog();
+      try {
+        if (!window.ethereum) {
+          throw new Error('No Ethereum provider found. Please install MetaMask!');
+        }
+        
+        const chainId = await ethereum.request({ method: 'eth_chainId' });
+        const networkVersion = await ethereum.request({ method: 'net_version' });
+        
+        log(`Chain ID: ${parseInt(chainId, 16)}`);
+        log(`Network ID: ${networkVersion}`);
+        log(`Connected: ${ethereum.isConnected()}`);
+        
+        updateConnectionInfo();
+      } catch (error) {
+        log(`Error checking network: ${error.message}`);
+      }
+    });
+    
+    // Call contract
+    document.getElementById('callContractBtn').addEventListener('click', async () => {
+      clearLog();
+      try {
+        if (!contract) {
+          throw new Error('Contract not initialized. Please connect first.');
+        }
+        
+        log('Calling getAllPolls()...');
+        
+        // Try with ethers.js Contract
+        try {
+          const polls = await contract.getAllPolls();
+          log(`Success! Poll addresses:\n${polls.join('\n')}`);
+          log(`Total polls: ${polls.length}`);
+        } catch (contractError) {
+          log(`Contract call error: ${contractError.message}`);
+          
+          // Try low-level call as fallback
+          log('Trying low-level call as fallback...');
+          try {
+            // Function selector for getAllPolls()
+            const getAllPollsSelector = '0x32b633fa';
+            
+            const rawResult = await signer.provider.call({
+              to: CONTRACT_ADDRESS,
+              data: getAllPollsSelector
+            });
+            
+            log(`Raw call result: ${rawResult}`);
+            // You'd need to decode this manually
+          } catch (lowLevelError) {
+            log(`Low-level call also failed: ${lowLevelError.message}`);
+          }
+        }
+      } catch (error) {
+        log(`Error: ${error.message}`);
+      }
+    });
+    
+    // Initial check
+    updateConnectionInfo();
+  </script>
+</body>
+</html> 
