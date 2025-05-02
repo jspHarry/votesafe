@@ -93,13 +93,8 @@ votesafe-dapp/
 
 ## Contributors
 
-Made with passion at [Hackathon Name] by:
-- [Your Name] (@your-github)
-- [Team Member 2]
-- [Team Member 3]
-
----
-
-## License
-
-MIT License
+Made with passion at [HackIndia] by:
+- [Jaspinder Singh] (@jspHarry)
+- [Noor Gumber]
+- [Keshav Garg]
+- [Harshita Sharma]
