@@ -36,10 +36,10 @@ VoteSafe can power elections for student bodies, decentralized communities (DAOs
 ## Screenshots
 
 ### 🗳️ Poll Creation
-![Poll Creation](./assets/1.png)
+./assests/1.png
 
 ### ✅ Voting Interface
-![Voting UI](./assets/2.png
+./assests/2.png
 
 ---
 
